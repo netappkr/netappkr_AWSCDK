@@ -27,3 +27,10 @@ sudo yum install bash-completion
 sudo kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl > /dev/null
 sudo echo 'alias k=kubectl' >> /etc/bashrc
 sudo echo 'complete -o default -F __start_kubectl k' >> /etc/bashrc
+
+# fsxn mount
+sudo yum install cifs-utils
+sudo mkdir -p /storage/fsxn/cifs
+
+
+

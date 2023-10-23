@@ -73,7 +73,6 @@ class FSxNStack(NestedStack):
             svm_admin_password="Netapp1!"
         )
         CfnOutput(self, "svmid", value=self.cfn_storage_virtual_machine.attr_storage_virtual_machine_id)
-        
         #volume
         self.cfn_volume = fsx.CfnVolume(self, "CifsVolume",
             name=Fn.join(delimiter="_", list_of_values=[prefix.value_as_string, "volume"]),

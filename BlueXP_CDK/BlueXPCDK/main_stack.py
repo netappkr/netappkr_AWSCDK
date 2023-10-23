@@ -30,18 +30,19 @@ class mainStack(Stack):
         BlueXP = BlueXPReqStack(self, "BlueXPReqStack", prefix=prefix)
         Tags.of(BlueXP).add("creator", creator.value_as_string)
 
+        bastionhost = BastionStack(self, "BastionStack", vpc=NW.vpc, defaultsg=NW.defaultsg, prefix=prefix)
+        Tags.of(bastionhost).add("creator", creator.value_as_string)
+        bastionhost.add_dependency(NW)
+        
         AD = ADStack(self, "ADStack", vpc=NW.vpc, prefix=prefix)
         Tags.of(AD).add("creator", creator.value_as_string)
         AD.add_dependency(NW)
 
-        bastionhost = BastionStack(self, "BastionStack", vpc=NW.vpc, defaultsg=NW.defaultsg, prefix=prefix)
-        Tags.of(bastionhost).add("creator", creator.value_as_string)
-        bastionhost.add_dependency(NW)
-
         FSxN = FSxNStack(self, "FSxNStack", vpc=NW.vpc, AD=AD.cfn_microsoft_AD, defaultsg=NW.defaultsg, prefix=prefix)
         Tags.of(FSxN).add("creator", creator.value_as_string)
         FSxN.add_dependency(AD)
-        
+
+
 
 
 

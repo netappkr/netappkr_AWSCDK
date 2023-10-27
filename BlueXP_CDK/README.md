@@ -11,12 +11,29 @@ BlueXP Hands on 환경 빠른 배포를 위한 구성
 
 ## requierment
 - aws cdk 환경이 구성되어 있어야 합니다.
+- aws cli가 설치되어 있어야 합니다.( 확인용 )
+
 ## How to use
-1. download
+1. download ZIP file or use git clone
 ```powershell
-git clone https://github.com/netappkr/netappkr_AWSCDK.git
+> git clone https://github.com/netappkr/netappkr_AWSCDK.git
 ```
-2. 
+2. cdk bootstrap 
+```
+> pwd
+netappkr_AWSCDK\BlueXP_CDK
+> cdk bootstrap --profile <AWS CLI 구성중 설정할 수 있는 .aws/config 파일에 명시된 profile 이름 >
+```
+> ### Tips
+> #### aws profile 구성 확인 명령
+> ```powershell 
+> aws configure list-profiles
+> ```
+
+3. cdk synth
+4. cdk diff
+
+### Main Stack
 ```Main Stack```이 생성 되고 각 ```NestedStack```을 배포합니다.
 필요하지 않은 스택은 주석처리 하세요.
 

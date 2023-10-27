@@ -1,0 +1,755 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Launch NetApp Data Broker for Cloud Sync",
+  "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+        {
+          "Label": {
+            "default": "NetApp Data Broker Placement"
+          },
+          "Parameters": [
+            "VpcId",
+            "SubnetId"
+          ]
+        },
+        {
+          "Label": {
+            "default": "NetApp Data Broker Security"
+          },
+          "Parameters": [
+            "KeyPair",
+            "AssociatePublicIpAddress",
+            "UserRole",
+            "KmsKey"
+          ]
+        },
+        {
+          "Label": {
+            "default": "NetApp Data Broker Proxy (Optional)"
+          },
+          "Parameters": [
+            "ProxyHost",
+            "ProxyPort",
+            "ProxyUsername",
+            "ProxyPassword"
+          ]
+        }
+      ],
+      "ParameterLabels": {
+        "VpcId": {
+          "default": "Which VPC should this be deployed to?"
+        },
+        "SubnetId": {
+          "default": "Which subnet should this be deployed to?"
+        },
+        "KeyPair": {
+          "default": "EC2 KeyPair"
+        },
+        "KmsKey": {
+          "default": "KMS Key Id (Optional)"
+        },
+        "ProxyHost": {
+          "default": "Proxy server host IP"
+        },
+        "ProxyPort": {
+          "default": "Proxy server TCP port"
+        },
+        "ProxyUsername": {
+          "default": "Proxy server username"
+        },
+        "ProxyPassword": {
+          "default": "Proxy server password"
+        },
+        "AssociatePublicIpAddress": {
+          "default": "Assign a public IP address?"
+        },
+        "UserRole": {
+          "default": "IAM role name (Optional)"
+        }
+      }
+    }
+  },
+  "Parameters": {
+    "VpcId": {
+      "Type": "AWS::EC2::VPC::Id",
+      "Description": "The list of your Virtual Private Cloud (VPC)",
+      "AllowedPattern": ".+"
+    },
+    "SubnetId": {
+      "Type": "AWS::EC2::Subnet::Id",
+      "Description": "The list of subnet IDs in your Virtual Private Cloud (VPC)",
+      "AllowedPattern": ".+"
+    },
+    "KeyPair": {
+      "Type": "AWS::EC2::KeyPair::KeyName",
+      "Description": "Name of an existing EC2 KeyPair to enable SSH access to the NetApp Data Broker",
+      "AllowedPattern": ".+"
+    },
+    "KmsKey": {
+      "Type": "String",
+      "Description": "The Id of an existing KMS key ID to use to encrypt NetApp Data Broker EBS volume.",
+      "Default": ""
+    },
+    "AssociatePublicIpAddress": {
+      "AllowedValues": [
+        "true",
+        "false"
+      ],
+      "Default": "true",
+      "Description": "Indicates whether the NetApp Data Broker instance should receive a public IP address",
+      "Type": "String"
+    },
+    "ProxyHost": {
+      "Type": "String",
+      "Description": "The IP or FQDN address of the proxy server (must be accessible from the data broker subnet",
+      "Default": ""
+    },
+    "ProxyPort": {
+      "Type": "String",
+      "AllowedPattern": "\\d{0,5}",
+      "Description": "The TCP port on which the proxy server listens",
+      "Default": ""
+    },
+    "ProxyUsername": {
+      "Type": "String",
+      "Description": "The proxy user name if proxy authentication is needed",
+      "Default": ""
+    },
+    "ProxyPassword": {
+      "Type": "String",
+      "NoEcho": true,
+      "Description": "The proxy password if proxy authentication is needed",
+      "Default": ""
+    },
+    "UserRole": {
+      "Type": "String",
+      "Description": "The name of an existing IAM role to use with NetApp Data Broker",
+      "Default": ""
+    }
+  },
+  "Mappings": {
+    "RegionMap": {
+      "ap-south-2": {
+        "ami": "ami-046b3d63c4fe1b3cf",
+        "InstanceType": "m5.xlarge"
+      },
+      "ap-south-1": {
+        "ami": "ami-0c768662cc797cd75",
+        "InstanceType": "m5.xlarge"
+      },
+      "eu-south-1": {
+        "ami": "ami-002be6e211640e0d1",
+        "InstanceType": "m5.xlarge"
+      },
+      "eu-south-2": {
+        "ami": "ami-002a76bf0b019b943",
+        "InstanceType": "m5.xlarge"
+      },
+      "me-central-1": {
+        "ami": "ami-024f14a69b01ef4a1",
+        "InstanceType": "m5.xlarge"
+      },
+      "ca-central-1": {
+        "ami": "ami-07e17b58812e0c7c2",
+        "InstanceType": "m5.xlarge"
+      },
+      "eu-central-1": {
+        "ami": "ami-0b7fd829e7758b06d",
+        "InstanceType": "m5n.xlarge"
+      },
+      "eu-central-2": {
+        "ami": "ami-0a407ff3659b37106",
+        "InstanceType": "m5.xlarge"
+      },
+      "us-west-1": {
+        "ami": "ami-0127b2e6f3b9b94d5",
+        "InstanceType": "m5.xlarge"
+      },
+      "us-west-2": {
+        "ami": "ami-009c5f630e96948cb",
+        "InstanceType": "m5n.xlarge"
+      },
+      "af-south-1": {
+        "ami": "ami-0e5e62d36ed699ae3",
+        "InstanceType": "m5.xlarge"
+      },
+      "eu-north-1": {
+        "ami": "ami-0577c11149d377ab7",
+        "InstanceType": "m5.xlarge"
+      },
+      "eu-west-3": {
+        "ami": "ami-05eb678ed1ab021c7",
+        "InstanceType": "m5.xlarge"
+      },
+      "eu-west-2": {
+        "ami": "ami-0d76271a8a1525c1a",
+        "InstanceType": "m5.xlarge"
+      },
+      "eu-west-1": {
+        "ami": "ami-04f1014c8adcfa670",
+        "InstanceType": "m5n.xlarge"
+      },
+      "ap-northeast-3": {
+        "ami": "ami-08334eeab9e50ade9",
+        "InstanceType": "m5.xlarge"
+      },
+      "ap-northeast-2": {
+        "ami": "ami-0a306845f8cfbd41a",
+        "InstanceType": "m5.xlarge"
+      },
+      "me-south-1": {
+        "ami": "ami-0a7f12208b31d4c19",
+        "InstanceType": "m5.xlarge"
+      },
+      "ap-northeast-1": {
+        "ami": "ami-01b32aa8589df6208",
+        "InstanceType": "m5n.xlarge"
+      },
+      "sa-east-1": {
+        "ami": "ami-0668aa31594136bd1",
+        "InstanceType": "m5.xlarge"
+      },
+      "ap-east-1": {
+        "ami": "ami-02dd9efb93332402e",
+        "InstanceType": "m5.xlarge"
+      },
+      "ap-southeast-1": {
+        "ami": "ami-03e312c9b09e29831",
+        "InstanceType": "m5n.xlarge"
+      },
+      "ap-southeast-2": {
+        "ami": "ami-0f6ad051716c81af1",
+        "InstanceType": "m5.xlarge"
+      },
+      "ap-southeast-3": {
+        "ami": "ami-065abbebbb8fbdd57",
+        "InstanceType": "m5.xlarge"
+      },
+      "ap-southeast-4": {
+        "ami": "ami-028c665aa311f5e7b",
+        "InstanceType": "m5.xlarge"
+      },
+      "us-east-1": {
+        "ami": "ami-02396cdd13e9a1257",
+        "InstanceType": "m5n.xlarge"
+      },
+      "us-east-2": {
+        "ami": "ami-0578f2b35d0328762",
+        "InstanceType": "m5n.xlarge"
+      },
+      "us-gov-west-1": {
+        "ami": "ami-05a104ca02a6d326c",
+        "InstanceType": "m5.xlarge"
+      },
+      "us-gov-east-1": {
+        "ami": "ami-0398f176c53573b2a",
+        "InstanceType": "m5.xlarge"
+      }
+    }
+  },
+  "Conditions": {
+    "ProxyEnabled": {
+      "Fn::Not": [
+        {
+          "Fn::Or": [
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "ProxyHost"
+                },
+                ""
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "ProxyPort"
+                },
+                ""
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "ProxyAuthenticationEnabled": {
+      "Fn::And": [
+        {
+          "Condition": "ProxyEnabled"
+        },
+        {
+          "Fn::Not": [
+            {
+              "Fn::Or": [
+                {
+                  "Fn::Equals": [
+                    {
+                      "Ref": "ProxyUsername"
+                    },
+                    ""
+                  ]
+                },
+                {
+                  "Fn::Equals": [
+                    {
+                      "Ref": "ProxyPassword"
+                    },
+                    ""
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "IsUserIamRoleNotProvided": {
+      "Fn::Equals": [
+        "",
+        {
+          "Ref": "UserRole"
+        }
+      ]
+    },
+    "IsUserIamRoleProvided": {
+      "Fn::Not": [
+        {
+          "Condition": "IsUserIamRoleNotProvided"
+        }
+      ]
+    },
+    "IsKmsKeyNotProvided": {
+      "Fn::Equals": [
+        "",
+        {
+          "Ref": "KmsKey"
+        }
+      ]
+    },
+    "IsKmsKeyProvided": {
+      "Fn::Not": [
+        {
+          "Condition": "IsKmsKeyNotProvided"
+        }
+      ]
+    }
+  },
+  "Resources": {
+    "DataBrokerIamRole": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "ec2.amazonaws.com"
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudformation:SignalResource",
+                    "s3:GetBucketNotification",
+                    "s3:PutBucketNotification",
+                    "s3:PutObject",
+                    "s3:PutObjectAcl",
+                    "s3:GetObject",
+                    "s3:DeleteObject",
+                    "s3:AbortMultipartUpload",
+                    "s3:ListBucket",
+                    "s3:ListAllMyBuckets",
+                    "s3:GetBucketLocation",
+                    "s3:GetBucketTagging",
+                    "s3:PutObjectTagging",
+                    "s3:GetObjectTagging",
+                    "s3:RestoreObject",
+                    "kms:GenerateDataKey",
+                    "kms:ListAliases",
+                    "kms:DescribeKey",
+                    "kms:Decrypt",
+                    "ec2:DescribeVpcEndpoints"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            },
+            "PolicyName": {
+              "Fn::Join": [
+                "_",
+                [
+                  "cloudsync",
+                  {
+                    "Ref": "AWS::StackName"
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "Condition": "IsUserIamRoleNotProvided",
+      "Type": "AWS::IAM::Role"
+    },
+    "DataBrokerInstanceProfile": {
+      "Properties": {
+        "Path": "/",
+        "Roles": {
+          "Fn::If": [
+            "IsUserIamRoleProvided",
+            [
+              {
+                "Ref": "UserRole"
+              }
+            ],
+            [
+              {
+                "Ref": "DataBrokerIamRole"
+              }
+            ]
+          ]
+        }
+      },
+      "Type": "AWS::IAM::InstanceProfile"
+    },
+    "DataBrokerSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Security group for the NetApp Data Broker",
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                "_",
+                [
+                  "cloudsync",
+                  {
+                    "Ref": "AWS::StackName"
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "DataBrokerInstance": {
+      "DependsOn": [
+        "DataBrokerSecurityGroup",
+        "DataBrokerInstanceProfile"
+      ],
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "DisableApiTermination": "false",
+        "ImageId": {
+          "Fn::FindInMap": [
+            "RegionMap",
+            {
+              "Ref": "AWS::Region"
+            },
+            "ami"
+          ]
+        },
+        "EbsOptimized": "true",
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/xvda",
+            "Ebs": {
+              "VolumeType": "gp3",
+              "VolumeSize": "10",
+              "Encrypted": "true",
+              "KmsKeyId": {
+                "Fn::If": [
+                  "IsKmsKeyProvided",
+                  {
+                    "Ref": "KmsKey"
+                  },
+                  {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:kms:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":alias/aws/ebs"
+                      ]
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "NetworkInterfaces": [
+          {
+            "AssociatePublicIpAddress": {
+              "Ref": "AssociatePublicIpAddress"
+            },
+            "DeleteOnTermination": "true",
+            "SubnetId": {
+              "Ref": "SubnetId"
+            },
+            "DeviceIndex": "0",
+            "GroupSet": [
+              {
+                "Ref": "DataBrokerSecurityGroup"
+              }
+            ]
+          }
+        ],
+        "InstanceType": {
+          "Fn::FindInMap": [
+            "RegionMap",
+            {
+              "Ref": "AWS::Region"
+            },
+            "InstanceType"
+          ]
+        },
+        "IamInstanceProfile": {
+          "Ref": "DataBrokerInstanceProfile"
+        },
+        "KeyName": {
+          "Ref": "KeyPair"
+        },
+        "Monitoring": "false",
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -xe\n",
+                "\n",
+                "# agent configuration\n",
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "waitHandleDataBrokerInstance='",
+                      {
+                        "Ref": "WaitHandleDataBrokerInstance"
+                      },
+                      "'\n"
+                    ]
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "waitHandleDataBrokerInstance='",
+                      {
+                        "Ref": "WaitHandleDataBrokerInstance"
+                      },
+                      "'\n"
+                    ]
+                  ]
+                },
+                {
+                  "Fn::If": [
+                    "ProxyEnabled",
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "export http_proxy=http://",
+                          {
+                            "Fn::If": [
+                              "ProxyAuthenticationEnabled",
+                              {
+                                "Fn::Join": [
+                                  "",
+                                  [
+                                    {
+                                      "Ref": "ProxyUsername"
+                                    },
+                                    ":",
+                                    {
+                                      "Ref": "ProxyPassword"
+                                    },
+                                    "@"
+                                  ]
+                                ]
+                              },
+                              ""
+                            ]
+                          },
+                          {
+                            "Ref": "ProxyHost"
+                          },
+                          ":",
+                          {
+                            "Ref": "ProxyPort"
+                          },
+                          "\n"
+                        ]
+                      ]
+                    },
+                    ""
+                  ]
+                },
+                {
+                  "Fn::If": [
+                    "ProxyEnabled",
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "export https_proxy=http://",
+                          {
+                            "Fn::If": [
+                              "ProxyAuthenticationEnabled",
+                              {
+                                "Fn::Join": [
+                                  "",
+                                  [
+                                    {
+                                      "Ref": "ProxyUsername"
+                                    },
+                                    ":",
+                                    {
+                                      "Ref": "ProxyPassword"
+                                    },
+                                    "@"
+                                  ]
+                                ]
+                              },
+                              ""
+                            ]
+                          },
+                          {
+                            "Ref": "ProxyHost"
+                          },
+                          ":",
+                          {
+                            "Ref": "ProxyPort"
+                          },
+                          "\n"
+                        ]
+                      ]
+                    },
+                    ""
+                  ]
+                },
+                "sed -i 's/SELINUX=permissive/SELINUX=disabled/g' /etc/sysconfig/selinux\n",
+                "setenforce 0\n",
+                "grubby --update-kernel ALL --args selinux=0\n",
+                "curl -v --location 'https://cf.cloudsync.netapp.com/80dd4c88-648b-4bb2-85e5-11bd67c417ac_installer' --connect-timeout 5 --retry 3 --output installer.sh\n",
+                "sed -i -e 's/\r$//' installer.sh\n",
+                "chmod +x installer.sh\n",
+                "./installer.sh",
+                {
+                  "Fn::If": [
+                    "ProxyEnabled",
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          " -h ",
+                          {
+                            "Ref": "ProxyHost"
+                          },
+                          " -p ",
+                          {
+                            "Ref": "ProxyPort"
+                          }
+                        ]
+                      ]
+                    },
+                    ""
+                  ]
+                },
+                {
+                  "Fn::If": [
+                    "ProxyAuthenticationEnabled",
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          " -u ",
+                          {
+                            "Ref": "ProxyUsername"
+                          },
+                          " -w ",
+                          {
+                            "Ref": "ProxyPassword"
+                          }
+                        ]
+                      ]
+                    },
+                    ""
+                  ]
+                },
+                "\n",
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "/opt/aws/bin/cfn-signal --exit-code 0 --reason \"DataBrokerInstance setup complete\"",
+                      " --region ",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      " $waitHandleDataBrokerInstance\n"
+                    ]
+                  ]
+                }
+              ]
+            ]
+          }
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Ref": "AWS::StackName"
+            }
+          }
+        ]
+      }
+    },
+    "WaitHandleDataBrokerInstance": {
+      "Type": "AWS::CloudFormation::WaitConditionHandle",
+      "Properties": {}
+    },
+    "WaitConditionDataBrokerInstance": {
+      "Type": "AWS::CloudFormation::WaitCondition",
+      "Properties": {
+        "Handle": {
+          "Ref": "WaitHandleDataBrokerInstance"
+        },
+        "Timeout": "900"
+      }
+    }
+  },
+  "Outputs": {
+    "InstanceId": {
+      "Description": "InstanceId of the newly created NetApp Data Broker",
+      "Value": {
+        "Ref": "DataBrokerInstance"
+      }
+    }
+  }
+}

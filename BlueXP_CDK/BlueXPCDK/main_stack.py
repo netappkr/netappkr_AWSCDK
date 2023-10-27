@@ -2,9 +2,11 @@ from BlueXPCDK.NW_stack import NetworkStack
 from BlueXPCDK.MSAD_stack import ADStack
 from BlueXPCDK.bastion_stack import BastionStack
 #from BlueXPCDK.EKS_stack import EKSStack
+from BlueXPCDK.databroker_stack import DatabrokerStack
 from BlueXPCDK.fsxn_stack import FSxNStack
 from BlueXPCDK.BlueXP_req import BlueXPReqStack
 #from BlueXPCDK.cvo_stack import CVOStack
+#from BlueXPCDK.test_stack import TestStack
 from aws_cdk import (
     Stack,
     CfnParameter,
@@ -33,6 +35,14 @@ class mainStack(Stack):
         bastionhost = BastionStack(self, "BastionStack", vpc=NW.vpc, defaultsg=NW.defaultsg, prefix=prefix)
         Tags.of(bastionhost).add("creator", creator.value_as_string)
         bastionhost.add_dependency(NW)
+
+        DataBroker = DatabrokerStack(self, "DataBroker", vpc=NW.vpc, defaultsg=NW.defaultsg, prefix=prefix)
+        Tags.of(DataBroker).add("creator", creator.value_as_string)
+        DataBroker.add_dependency(bastionhost)
+        
+        # test = TestStack(self, "test", vpc=NW.vpc, defaultsg=NW.defaultsg, prefix=prefix)
+        # Tags.of(test).add("creator", creator.value_as_string)
+        # test.add_dependency(bastionhost)
         
         AD = ADStack(self, "ADStack", vpc=NW.vpc, prefix=prefix)
         Tags.of(AD).add("creator", creator.value_as_string)

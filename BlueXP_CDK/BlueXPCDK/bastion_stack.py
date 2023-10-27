@@ -4,7 +4,8 @@ from aws_cdk import (
     aws_ec2 as ec2,
     aws_iam as iam,
     CfnParameter,
-    Fn
+    Fn,
+    CfnOutput
 )
 from constructs import Construct
 
@@ -89,3 +90,5 @@ class BastionStack(NestedStack):
                          prefix.value_as_string, "key"]),
                      user_data=userdata
                      )
+        
+        CfnOutput(self, "keypairname", export_name="keypairname", value=self.keyPair.key_name)

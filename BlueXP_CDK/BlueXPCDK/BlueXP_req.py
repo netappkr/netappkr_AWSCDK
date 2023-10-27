@@ -23,6 +23,14 @@ class BlueXPReqStack(NestedStack):
             # custom description if desired
             description="Netapp Hands on BlueXP Role"
         )
+
+        # DataBrokerRole = iam.Role(self, "DataBrokerRole",
+        #                 role_name=Fn.join(delimiter="_", list_of_values=[
+        #                       prefix.value_as_string, "DataBroker_Role"]),
+        #     assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),
+        #     # custom description if desired
+        #     description="Netapp Hands on DataBroker Role"
+        # )
         # Pollicy 문서
         policy_document = iam.PolicyDocument.from_json(
         {
@@ -337,26 +345,111 @@ class BlueXPReqStack(NestedStack):
         }
         )
         policy_document2 = iam.PolicyDocument.from_json(
-        {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Sid": "createfsx",
-                    "Effect": "Allow",
-                    "Action": [
-                        "fsx:*",
-                        "ec2:Describe*",
-                        "ec2:CreateTags",
-                        "kms:Describe*",
-                        "kms:List*",
-                        "kms:CreateGrant",
-                        "iam:CreateServiceLinkedRole"
-                    ],
-                    "Resource": "*"
-                }
-            ]
-        }
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Sid": "createfsx",
+                        "Effect": "Allow",
+                        "Action": [
+                            "fsx:*",
+                            "ec2:Describe*",
+                            "ec2:CreateTags",
+                            "kms:Describe*",
+                            "kms:List*",
+                            "kms:CreateGrant",
+                            "iam:CreateServiceLinkedRole"
+                        ],
+                        "Resource": "*"
+                    }
+                ]
+            }
         )
+        # policy_document3 = iam.PolicyDocument.from_json(
+        #     {
+        #         "Version": "2012-10-17",
+        #         "Statement": [
+        #             {
+        #                 "Sid": "VisualEditor0",
+        #                 "Effect": "Allow",
+        #                 "Action": [
+        #                     "kms:ListAliases",
+        #                     "ec2:AuthorizeSecurityGroupIngress",
+        #                     "ec2:DescribeInstances",
+        #                     "iam:ListServerCertificates",
+        #                     "iam:RemoveRoleFromInstanceProfile",
+        #                     "iam:CreateRole",
+        #                     "iam:ListServiceSpecificCredentials",
+        #                     "iam:PutRolePolicy",
+        #                     "iam:ListSigningCertificates",
+        #                     "iam:ListVirtualMFADevices",
+        #                     "iam:AddRoleToInstanceProfile",
+        #                     "iam:ListSSHPublicKeys",
+        #                     "cloudformation:DescribeStackEvents",
+        #                     "cloudformation:ListStacks",
+        #                     "iam:ListAttachedRolePolicies",
+        #                     "s3:DeleteObject",
+        #                     "iam:ListRolePolicies",
+        #                     "ec2:DescribeKeyPairs",
+        #                     "iam:ListPolicies",
+        #                     "iam:ListSAMLProviders",
+        #                     "ec2:CreateTags",
+        #                     "iam:ListEntitiesForPolicy",
+        #                     "iam:DeleteRole",
+        #                     "ec2:RunInstances",
+        #                     "cloudformation:SignalResource",
+        #                     "cloudformation:GetTemplateSummary",
+        #                     "s3:ListMultipartUploadParts",
+        #                     "cloudformation:DescribeStacks",
+        #                     "s3:PutObject",
+        #                     "s3:GetObject",
+        #                     "iam:ListGroupsForUser",
+        #                     "cloudformation:DeleteStack",
+        #                     "ec2:DescribeSubnets",
+        #                     "iam:GetAccountSummary",
+        #                     "iam:CreateInstanceProfile",
+        #                     "s3:GetBucketTagging",
+        #                     "ec2:DeleteTags",
+        #                     "ec2:DescribeRegions",
+        #                     "iam:ListPoliciesGrantingServiceAccess",
+        #                     "s3:ListBucket",
+        #                     "iam:ListMFADevices",
+        #                     "sqs:*",
+        #                     "iam:ListInstanceProfilesForRole",
+        #                     "iam:PassRole",
+        #                     "s3:AbortMultipartUpload",
+        #                     "iam:DeleteRolePolicy",
+        #                     "ec2:CreateSecurityGroup",
+        #                     "iam:ListAttachedUserPolicies",
+        #                     "iam:ListAttachedGroupPolicies",
+        #                     "iam:ListAccessKeys",
+        #                     "iam:DeleteInstanceProfile",
+        #                     "s3:ListBucketMultipartUploads",
+        #                     "ec2:TerminateInstances",
+        #                     "iam:ListGroupPolicies",
+        #                     "ec2:DescribeTags",
+        #                     "iam:ListRoles",
+        #                     "iam:ListUserPolicies",
+        #                     "iam:ListInstanceProfiles",
+        #                     "ec2:DescribeSecurityGroups",
+        #                     "ec2:DescribeImages",
+        #                     "s3:ListAllMyBuckets",
+        #                     "iam:ListPolicyVersions",
+        #                     "iam:ListOpenIDConnectProviders",
+        #                     "cloudformation:CreateStack",
+        #                     "ec2:DescribeVpcs",
+        #                     "ec2:DeleteSecurityGroup",
+        #                     "iam:ListAccountAliases",
+        #                     "iam:ListUsers",
+        #                     "iam:ListGroups",
+        #                     "s3:GetBucketLocation",
+        #                     "iam:GetLoginProfile"
+        #                 ],
+        #                 "Resource": "*"
+        #             }
+        #         ]
+        #     }
+        # )
         # Policy 생성
         BlueXP_Policy = iam.Policy(
             self,"HandsonCloudmangerPolicy",
@@ -364,15 +457,26 @@ class BlueXPReqStack(NestedStack):
                               prefix.value_as_string, "BlueXP_Policy"]),
             document=policy_document
         )
+        
         OCCMFSx = iam.Policy(
             self,"OCCMFSx",
             policy_name=Fn.join(delimiter="_", list_of_values=[
                               prefix.value_as_string, "OCCMFSxN_Policy"]),
             document=policy_document2
         )
+        # data_broker_policy = iam.Policy(
+        #     self,"DataBroker",
+        #     policy_name=Fn.join(delimiter="_", list_of_values=[
+        #                       prefix.value_as_string, "DataBroker_Policy"]),
+        #     document=policy_document3
+        # )
+        
         # Role 에 Policy 부여
         role.attach_inline_policy(BlueXP_Policy)
         role.attach_inline_policy(OCCMFSx)
+        # DataBrokerRole.attach_inline_policy(data_broker_policy)
 
         CfnOutput(self, "BlueXPRoleArn", value=role.role_arn)
         CfnOutput(self, "BluxXP.CredentinalName", value=Fn.join(delimiter="_", list_of_values=[self.account,role.role_name]))
+        # CfnOutput(self, "DataBrokerRoleArn", value=DataBrokerRole.role_arn)
+        # CfnOutput(self, "DataBrokerRoleName", value=DataBrokerRole.role_name)

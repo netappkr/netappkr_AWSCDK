@@ -15,7 +15,7 @@
 
 ## CDK asset download
 ```
-aws s3 cp s3://cdk-hnb659fds-assets-037660834288-ap-northeast-2/* ./
+aws s3 cp s3://cdk-hnb659fds-assets-037660834288-ap-northeast-2/ ./ --profile cds-user-01 --recursive
 ```
 
 ## aws profile 구성 확인

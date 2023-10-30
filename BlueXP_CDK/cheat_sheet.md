@@ -17,6 +17,10 @@
 ```
 aws s3 cp s3://cdk-hnb659fds-assets-037660834288-ap-northeast-2/ ./ --profile cds-user-01 --recursive
 ```
+## CDK template upload
+```
+aws s3 cp ./ s3://netappkr-wyahn-s3/public/BlueXP/ --profile default --recursive
+```
 
 ## aws profile 구성 확인
 ```powershell 

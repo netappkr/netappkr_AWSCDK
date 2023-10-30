@@ -40,3 +40,11 @@ class NetworkStack(NestedStack):
         #CfnOutput(self,"private-subnet-id-0",value=self.vpc.select_subnets(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS).subnet_ids[0])
         #CfnOutput(self,"private-subnet-id-1",value=self.vpc.select_subnets(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS).subnet_ids[1])
         #CfnOutput(self,"routetable-id",value=self.vpc.select_subnets(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS).subnets[0].route_table.route_table_id)
+        ec2.InterfaceVpcEndpoint(self, "VPC Endpoint",
+            vpc=self.vpc,
+            service=ec2.InterfaceVpcEndpointService("com.amazonaws.ap-northeast-2.s3", 443),
+            subnets=ec2.SubnetSelection(
+                subnet_type=ec2.SubnetType.PUBLIC
+            )
+        )
+        

@@ -36,9 +36,9 @@ class mainStack(Stack):
         Tags.of(bastionhost).add("creator", creator.value_as_string)
         bastionhost.add_dependency(NW)
 
-        DataBroker = DatabrokerStack(self, "DataBroker", vpc=NW.vpc, defaultsg=NW.defaultsg, prefix=prefix)
-        Tags.of(DataBroker).add("creator", creator.value_as_string)
-        DataBroker.add_dependency(bastionhost)
+        # DataBroker = DatabrokerStack(self, "DataBroker", vpc=NW.vpc, defaultsg=NW.defaultsg, prefix=prefix)
+        # Tags.of(DataBroker).add("creator", creator.value_as_string)
+        # DataBroker.add_dependency(bastionhost)
         
         # test = TestStack(self, "test", vpc=NW.vpc, defaultsg=NW.defaultsg, prefix=prefix)
         # Tags.of(test).add("creator", creator.value_as_string)

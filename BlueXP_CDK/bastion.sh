@@ -23,13 +23,13 @@ sudo tar -zxvf trident-installer-23.01.0.tar.gz -C /opt
 sudo install -o root -g root -m 0755 /opt/trident-installer/tridentctl /usr/local/bin/tridentctl
 
 # bash-completton
-sudo yum install bash-completion
+sudo yum -y install bash-completion
 sudo kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl > /dev/null
 sudo echo 'alias k=kubectl' >> /etc/bashrc
 sudo echo 'complete -o default -F __start_kubectl k' >> /etc/bashrc
 
 # fsxn mount
-sudo yum install cifs-utils
+sudo yum -y install cifs-utils
 sudo mkdir -p /storage/fsxn/cifs
 
 

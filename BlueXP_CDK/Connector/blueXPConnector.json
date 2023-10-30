@@ -1,0 +1,935 @@
+{
+	"AWSTemplateFormatVersion": "2010-09-09",
+	"Description": "BlueXP Connector",
+	"Parameters": {
+		"CustomExternalSecurityGroup": {
+			"Type": "String",
+			"Description": "Security Group in your Virtual Private Cloud (VPC) to use for firewall protection",
+			"Default": ""
+		},
+		"RoleName": {
+			"Type": "String",
+			"Description": "Name of the BlueXP connector that will be deployed.",
+			"Default": "NetApp-BlueXP-Role"
+		},
+		"InstanceName": {
+			"Type": "String",
+			"Default": "NetApp-BlueXP-connector",
+			"Description": "Name of the BlueXP connector that will be deployed."
+		},
+		"VPCId": {
+			"Type": "AWS::EC2::VPC::Id",
+			"Description": "Target VPC for BlueXP"
+		},
+		"SubnetId": {
+			"Type": "AWS::EC2::Subnet::Id",
+			"Description": "SubnetID for BlueXP"
+		},
+		"KeyPair": {
+			"Type": "AWS::EC2::KeyPair::KeyName",
+			"Description": "BlueXP instance will be launched with this KeyPair"
+		},
+		"AllocatePublicIP": {
+			"Type": "String",
+			"Description": "Set to 'true', if instance requires a public IP address for use with an IGW.",
+			"AllowedValues": [
+				"true",
+				"false"
+			],
+			"Default": "true"
+		},
+		"RemoteAccessCIDRHttp": {
+			"Description": "BlueXP web access will be allowed from this CIDR range (example for full access: 0.0.0.0/0)",
+			"Default": "0.0.0.0/0",
+			"Type": "String",
+			"MinLength": "9",
+			"MaxLength": "18",
+			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+			"ConstraintDescription": "Must be a valid CIDR range of the form x.x.x.x/x."
+		},
+		"RemoteAccessCIDRHttps": {
+			"Description": "BlueXP web access will be allowed from this CIDR range (example for full access: 0.0.0.0/0)",
+			"Default": "0.0.0.0/0",
+			"Type": "String",
+			"MinLength": "9",
+			"MaxLength": "18",
+			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+			"ConstraintDescription": "Must be a valid CIDR range of the form x.x.x.x/x."
+		},
+		"RemoteAccessCIDRSsh": {
+			"Description": "BlueXP web access will be allowed from this CIDR range (example for full access: 0.0.0.0/0)",
+			"Default": "0.0.0.0/0",
+			"Type": "String",
+			"MinLength": "9",
+			"MaxLength": "18",
+			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+			"ConstraintDescription": "Must be a valid CIDR range of the form x.x.x.x/x."
+		},
+		"RemoteAccessCIDRVPC": {
+			"Description": "BlueXP web access will be allowed to be fully accessed from the vpc cidr",
+			"Default": "1.1.1.1/32",
+			"Type": "String",
+			"MinLength": "9",
+			"MaxLength": "18",
+			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+			"ConstraintDescription": "Must be a valid CIDR range of the form x.x.x.x/x."
+		},
+		"DedicatedVPC": {
+			"Type": "String",
+			"Description": "Set to 'true', if VPC is dedicated.",
+			"AllowedValues": [
+				"true",
+				"false"
+			],
+			"Default": "false"
+		},
+		"AwsARN": {
+			"Type": "String",
+			"Description": "ARN prefix for GOV Cloud",
+			"Default": "arn:aws"
+		},
+		"ConnectorUserData": {
+			"Type": "String",
+			"Description": "User Data to inject for setup"
+		},
+		"IamProfileName": {
+			"Type": "String",
+			"Description": "Name of an existing role",
+			"Default": ""
+		},
+		"EncryptVolume": {
+			"Type": "String",
+			"Description": "Encrypt EBS volumes",
+			"AllowedValues": [
+				"true",
+				"false"
+			],
+			"Default": "false"
+		},
+		"EncryptionKey": {
+			"Type": "String",
+			"Description": "Ebs Encryption KMS Key",
+			"Default": ""
+		}
+	},
+	"Mappings": {
+		"RegionMap": {
+			"us-west-2": {
+				"AMI": "ami-0efb28712ba428029"
+			},
+			"us-east-1": {
+				"AMI": "ami-08e3d1659ea522b13"
+			},
+			"ap-southeast-1": {
+				"AMI": "ami-02c7e9e18ac246110"
+			},
+			"ap-northeast-2": {
+				"AMI": "ami-0bdaa7275da1727e2"
+			},
+			"ap-northeast-1": {
+				"AMI": "ami-08ab89f5a610d853f"
+			},
+			"ca-central-1": {
+				"AMI": "ami-0f816169722e7f57c"
+			},
+			"eu-central-1": {
+				"AMI": "ami-02ad1a32e87392120"
+			},
+			"us-west-1": {
+				"AMI": "ami-0bef0f42bfff80a32"
+			},
+			"eu-west-1": {
+				"AMI": "ami-0a2994c5154646d13"
+			},
+			"eu-west-2": {
+				"AMI": "ami-015c1b07ef0f0476b"
+			},
+			"eu-west-3": {
+				"AMI": "ami-04cddbc7a32bd0afd"
+			},
+			"ap-southeast-2": {
+				"AMI": "ami-0618af3f21ce1a0ab"
+			},
+			"us-east-2": {
+				"AMI": "ami-03bcae933bbad1a68"
+			},
+			"sa-east-1": {
+				"AMI": "ami-0c3dc15200f8b9c0d"
+			},
+			"ap-south-1": {
+				"AMI": "ami-00d0ed30f2fbf22ff"
+			},
+			"us-gov-west-1": {
+				"AMI": "ami-027cd50cda9867496"
+			},
+			"us-gov-east-1": {
+				"AMI": "ami-02339352ca03a83dd"
+			},
+			"eu-north-1": {
+				"AMI": "ami-0d846978002e49a3c"
+			},
+			"ap-east-1": {
+				"AMI": "ami-047725df425f19080"
+			},
+			"me-south-1": {
+				"AMI": "ami-07e31646193e6faf4"
+			},
+			"af-south-1": {
+				"AMI": "ami-0ef2b62f6a611017e"
+			},
+			"eu-south-1": {
+				"AMI": "ami-027f0ca996577aef8"
+			},
+			"ap-northeast-3": {
+				"AMI": "ami-05e66a5eeddc13b48"
+			},
+			"ap-southeast-3": {
+				"AMI": "ami-03d65f712d6e3dadb"
+			},
+			"ap-south-2": {
+				"AMI": "ami-070ce7423723ac1c5"
+			},
+			"eu-south-2": {
+				"AMI": "ami-04b0ac0285d340723"
+			},
+			"me-central-1": {
+				"AMI": "ami-05997f3950ddefd52"
+			},
+			"eu-central-2": {
+				"AMI": "ami-0bc5015e2c023543e"
+			},
+			"ap-southeast-4": {
+				"AMI": "ami-014db6279b01d2d74"
+			},
+			"il-central-1": {
+				"AMI": "ami-0750f4543b90e9d04"
+			}
+		}
+	},
+	"Conditions": {
+		"NoPublicIP": {
+			"Fn::Equals": [
+				{
+					"Ref": "AllocatePublicIP"
+				},
+				"false"
+			]
+		},
+		"NoDedicated": {
+			"Fn::Equals": [
+				{
+					"Ref": "DedicatedVPC"
+				},
+				"false"
+			]
+		},
+		"NoCustomSG": {
+			"Fn::Equals": [
+				{
+					"Ref": "CustomExternalSecurityGroup"
+				},
+				""
+			]
+		},
+		"NoCustomAgentSG": {
+			"Fn::Equals": [
+				{
+					"Ref": "CustomExternalSecurityGroup"
+				},
+				""
+			]
+		},
+		"GeneratedSG": {
+			"Fn::Or": [
+				{
+					"Condition": "NoCustomAgentSG"
+				},
+				{
+					"Condition": "NoCustomSG"
+				}
+			]
+		},
+		"NoCustomIamProfile": {
+			"Fn::Equals": [
+				{
+					"Ref": "IamProfileName"
+				},
+				""
+			]
+		},
+		"EncWithKey": {
+			"Fn::And": [
+				{
+					"Fn::Equals": [
+						{
+							"Ref": "EncryptVolume"
+						},
+						"true"
+					]
+				},
+				{
+					"Fn::Not": [
+						{
+							"Fn::Equals": [
+								{
+									"Ref": "EncryptionKey"
+								},
+								""
+							]
+						}
+					]
+				}
+			]
+		}
+	},
+	"Resources": {
+		"OCCMIAMRole": {
+			"Condition": "NoCustomIamProfile",
+			"Properties": {
+				"RoleName": {
+					"Ref": "RoleName"
+				},
+				"AssumeRolePolicyDocument": {
+					"Statement": [
+						{
+							"Action": [
+								"sts:AssumeRole"
+							],
+							"Effect": "Allow",
+							"Principal": {
+								"Service": [
+									"ec2.amazonaws.com"
+								]
+							}
+						}
+					],
+					"Version": "2012-10-17"
+				},
+				"Path": "/",
+				"Policies": [
+					{
+						"PolicyDocument": {
+							"Statement": [
+								{
+									"Sid": "K8sServicePolicy",
+									"Effect": "Allow",
+									"Action": [
+										"ec2:DescribeRegions",
+										"eks:ListClusters",
+										"eks:DescribeCluster",
+										"iam:GetInstanceProfile"
+									],
+									"Resource": "*"
+								},
+								{
+									"Sid": "GFCservicePolicy",
+									"Effect": "Allow",
+									"Action": [
+										"cloudformation:DescribeStacks",
+										"cloudwatch:GetMetricStatistics",
+										"cloudformation:ListStacks"
+									],
+									"Resource": "*"
+								},
+								{
+									"Effect": "Allow",
+									"Action": [
+										"ec2:StartInstances",
+										"ec2:TerminateInstances",
+										"ec2:AttachVolume",
+										"ec2:DetachVolume"
+									],
+									"Condition": {
+										"StringLike": {
+											"ec2:ResourceTag/GFCInstance": "*"
+										}
+									},
+									"Resource": [
+										"arn:aws:ec2:*:*:instance/*"
+									]
+								},
+								{
+									"Sid": "tagServicePolicy",
+									"Effect": "Allow",
+									"Action": [
+										"ec2:CreateTags",
+										"ec2:DeleteTags",
+										"ec2:DescribeTags",
+										"tag:getResources",
+										"tag:getTagKeys",
+										"tag:getTagValues",
+										"tag:TagResources",
+										"tag:UntagResources"
+									],
+									"Resource": "*"
+								}
+							]
+						},
+						"PolicyName": {
+							"Fn::Join": [
+								"",
+								[
+									{
+										"Ref": "InstanceName"
+									},
+									"BlueXP_Policy_II"
+								]
+							]
+						}
+					},
+					{
+						"PolicyDocument": {
+							"Statement": [
+								{
+									"Sid": "cvoServicePolicy",
+									"Effect": "Allow",
+									"Action": [
+										"ec2:DescribeInstances",
+										"ec2:DescribeInstanceStatus",
+										"ec2:RunInstances",
+										"ec2:ModifyInstanceAttribute",
+										"ec2:DescribeInstanceAttribute",
+										"ec2:DescribeRouteTables",
+										"ec2:DescribeImages",
+										"ec2:CreateTags",
+										"ec2:CreateVolume",
+										"ec2:DescribeVolumes",
+										"ec2:ModifyVolumeAttribute",
+										"ec2:CreateSecurityGroup",
+										"ec2:DescribeSecurityGroups",
+										"ec2:RevokeSecurityGroupEgress",
+										"ec2:AuthorizeSecurityGroupEgress",
+										"ec2:AuthorizeSecurityGroupIngress",
+										"ec2:RevokeSecurityGroupIngress",
+										"ec2:CreateNetworkInterface",
+										"ec2:DescribeNetworkInterfaces",
+										"ec2:ModifyNetworkInterfaceAttribute",
+										"ec2:DescribeSubnets",
+										"ec2:DescribeVpcs",
+										"ec2:DescribeDhcpOptions",
+										"ec2:CreateSnapshot",
+										"ec2:DescribeSnapshots",
+										"ec2:GetConsoleOutput",
+										"ec2:DescribeKeyPairs",
+										"ec2:DescribeRegions",
+										"ec2:DescribeTags",
+										"ec2:AssociateIamInstanceProfile",
+										"ec2:DescribeIamInstanceProfileAssociations",
+										"ec2:DisassociateIamInstanceProfile",
+										"ec2:CreatePlacementGroup",
+										"ec2:DescribeReservedInstancesOfferings",
+										"ec2:AssignPrivateIpAddresses",
+										"ec2:CreateRoute",
+										"ec2:DescribeVpcs",
+										"ec2:ReplaceRoute",
+										"ec2:UnassignPrivateIpAddresses",
+										"ec2:DeleteSecurityGroup",
+										"ec2:DeleteNetworkInterface",
+										"ec2:DeleteSnapshot",
+										"ec2:DeleteTags",
+										"ec2:DeleteRoute",
+										"ec2:DeletePlacementGroup",
+										"ec2:DescribePlacementGroups",
+										"ec2:DescribeVolumesModifications",
+										"ec2:ModifyVolume",
+										"cloudformation:CreateStack",
+										"cloudformation:DescribeStacks",
+										"cloudformation:DescribeStackEvents",
+										"cloudformation:ValidateTemplate",
+										"cloudformation:DeleteStack",
+										"iam:PassRole",
+										"iam:CreateRole",
+										"iam:PutRolePolicy",
+										"iam:CreateInstanceProfile",
+										"iam:AddRoleToInstanceProfile",
+										"iam:RemoveRoleFromInstanceProfile",
+										"iam:ListInstanceProfiles",
+										"iam:DeleteRole",
+										"iam:DeleteRolePolicy",
+										"iam:DeleteInstanceProfile",
+										"iam:GetRolePolicy",
+										"iam:GetRole",
+										"sts:DecodeAuthorizationMessage",
+										"sts:AssumeRole",
+										"s3:GetBucketTagging",
+										"s3:GetBucketLocation",
+										"s3:ListBucket",
+										"s3:CreateBucket",
+										"s3:GetLifecycleConfiguration",
+										"s3:ListBucketVersions",
+										"s3:GetBucketPolicyStatus",
+										"s3:GetBucketPublicAccessBlock",
+										"s3:GetBucketPolicy",
+										"s3:GetBucketAcl",
+										"s3:PutObjectTagging",
+										"s3:GetObjectTagging",
+										"s3:DeleteObject",
+										"s3:DeleteObjectVersion",
+										"s3:PutObject",
+										"s3:ListAllMyBuckets",
+										"s3:GetObject",
+										"s3:GetEncryptionConfiguration",
+										"kms:List*",
+										"kms:ReEncrypt*",
+										"kms:Describe*",
+										"kms:CreateGrant",
+										"ce:GetReservationUtilization",
+										"ce:GetDimensionValues",
+										"ce:GetCostAndUsage",
+										"ce:GetTags",
+										"fsx:Describe*",
+										"fsx:List*"
+									],
+									"Resource": "*"
+								},
+								{
+									"Sid": "backupPolicy",
+									"Effect": "Allow",
+									"Action": [
+										"ec2:StartInstances",
+										"ec2:StopInstances",
+										"ec2:DescribeInstances",
+										"ec2:DescribeInstanceStatus",
+										"ec2:RunInstances",
+										"ec2:TerminateInstances",
+										"ec2:DescribeInstanceAttribute",
+										"ec2:DescribeImages",
+										"ec2:CreateTags",
+										"ec2:CreateVolume",
+										"ec2:CreateSecurityGroup",
+										"ec2:DescribeSubnets",
+										"ec2:DescribeVpcs",
+										"ec2:DescribeRegions",
+										"cloudformation:CreateStack",
+										"cloudformation:DeleteStack",
+										"cloudformation:DescribeStacks",
+										"kms:List*",
+										"kms:Describe*",
+										"ec2:describeVpcEndpoints",
+										"kms:ListAliases",
+										"athena:StartQueryExecution",
+										"athena:GetQueryResults",
+										"athena:GetQueryExecution",
+										"glue:GetDatabase",
+										"glue:GetTable",
+										"glue:CreateTable",
+										"glue:CreateDatabase",
+										"glue:GetPartitions",
+										"glue:BatchCreatePartition",
+										"glue:BatchDeletePartition"
+									],
+									"Resource": "*"
+								},
+								{
+									"Sid": "backupS3Policy",
+									"Effect": "Allow",
+									"Action": [
+										"s3:GetBucketLocation",
+										"s3:ListAllMyBuckets",
+										"s3:ListBucket",
+										"s3:CreateBucket",
+										"s3:GetLifecycleConfiguration",
+										"s3:PutLifecycleConfiguration",
+										"s3:PutBucketTagging",
+										"s3:ListBucketVersions",
+										"s3:GetBucketAcl",
+										"s3:PutBucketPublicAccessBlock",
+										"s3:GetObject",
+										"s3:PutEncryptionConfiguration",
+										"s3:DeleteObject",
+										"s3:DeleteObjectVersion",
+										"s3:ListBucketMultipartUploads",
+										"s3:PutObject",
+										"s3:PutBucketAcl",
+										"s3:AbortMultipartUpload",
+										"s3:ListMultipartUploadParts",
+										"s3:DeleteBucket",
+										"s3:GetObjectVersionTagging",
+										"s3:GetObjectVersionAcl",
+										"s3:GetObjectRetention",
+										"s3:GetObjectTagging",
+										"s3:GetObjectVersion",
+										"s3:PutObjectVersionTagging",
+										"s3:PutObjectRetention",
+										"s3:DeleteObjectTagging",
+										"s3:DeleteObjectVersionTagging",
+										"s3:GetBucketObjectLockConfiguration",
+										"s3:GetBucketVersioning",
+										"s3:PutBucketObjectLockConfiguration",
+										"s3:PutBucketVersioning",
+										"s3:BypassGovernanceRetention",
+										"s3:PutBucketPolicy",
+										"s3:PutBucketOwnershipControls"
+									],
+									"Resource": [
+										"arn:aws:s3:::netapp-backup-*"
+									]
+								},
+								{
+									"Sid": "fabricPoolS3Policy",
+									"Effect": "Allow",
+									"Action": [
+										"s3:CreateBucket",
+										"s3:GetLifecycleConfiguration",
+										"s3:PutLifecycleConfiguration",
+										"s3:PutBucketTagging",
+										"s3:ListBucketVersions",
+										"s3:GetBucketPolicyStatus",
+										"s3:GetBucketPublicAccessBlock",
+										"s3:GetBucketAcl",
+										"s3:GetBucketPolicy",
+										"s3:PutBucketPublicAccessBlock",
+										"s3:DeleteBucket"
+									],
+									"Resource": [
+										"arn:aws:s3:::fabric-pool*"
+									]
+								},
+								{
+									"Sid": "fabricPoolPolicy",
+									"Effect": "Allow",
+									"Action": [
+										"ec2:DescribeRegions"
+									],
+									"Resource": "*"
+								},
+								{
+									"Effect": "Allow",
+									"Action": [
+										"ec2:StartInstances",
+										"ec2:StopInstances",
+										"ec2:TerminateInstances"
+									],
+									"Condition": {
+										"StringLike": {
+											"ec2:ResourceTag/netapp-adc-manager": "*"
+										}
+									},
+									"Resource": [
+										"arn:aws:ec2:*:*:instance/*"
+									]
+								},
+								{
+									"Effect": "Allow",
+									"Action": [
+										"ec2:StartInstances",
+										"ec2:TerminateInstances",
+										"ec2:AttachVolume",
+										"ec2:DetachVolume",
+										"ec2:StopInstances",
+										"ec2:DeleteVolume"
+									],
+									"Condition": {
+										"StringLike": {
+											"ec2:ResourceTag/WorkingEnvironment": "*"
+										}
+									},
+									"Resource": [
+										"arn:aws:ec2:*:*:instance/*"
+									]
+								},
+								{
+									"Effect": "Allow",
+									"Action": [
+										"ec2:AttachVolume",
+										"ec2:DetachVolume"
+									],
+									"Resource": [
+										"arn:aws:ec2:*:*:volume/*"
+									]
+								},
+								{
+									"Effect": "Allow",
+									"Action": [
+										"ec2:DeleteVolume"
+									],
+									"Condition": {
+										"StringLike": {
+											"ec2:ResourceTag/WorkingEnvironment": "*"
+										}
+									},
+									"Resource": [
+										"arn:aws:ec2:*:*:volume/*"
+									]
+								}
+							]
+						},
+						"PolicyName": {
+							"Fn::Join": [
+								"",
+								[
+									{
+										"Ref": "InstanceName"
+									},
+									"BlueXP_Policy_I"
+								]
+							]
+						}
+					}
+				]
+			},
+			"Type": "AWS::IAM::Role",
+			"Metadata": {
+				"AWS::CloudFormation::Designer": {
+					"id": "4ea8eae5-83f9-48dd-a647-682b18e68de8"
+				}
+			}
+		},
+		"OCCMInstanceProfile": {
+			"Type": "AWS::IAM::InstanceProfile",
+			"Properties": {
+				"Path": "/",
+				"Roles": [
+					{
+						"Fn::If": [
+							"NoCustomIamProfile",
+							{
+								"Ref": "OCCMIAMRole"
+							},
+							{
+								"Ref": "IamProfileName"
+							}
+						]
+					}
+				]
+			},
+			"Metadata": {
+				"AWS::CloudFormation::Designer": {
+					"id": "58d69253-03a4-43b6-952b-63debf2ebb50"
+				}
+			}
+		},
+		"OCCMSecurityGroup": {
+			"Condition": "NoCustomSG",
+			"Type": "AWS::EC2::SecurityGroup",
+			"Properties": {
+				"GroupDescription": "NetApp BlueXP connector External Security Group",
+				"VpcId": {
+					"Ref": "VPCId"
+				},
+				"SecurityGroupIngress": [
+					{
+						"IpProtocol": "TCP",
+						"FromPort": "22",
+						"ToPort": "22",
+						"CidrIp": {
+							"Ref": "RemoteAccessCIDRSsh"
+						}
+					},
+					{
+						"IpProtocol": "TCP",
+						"FromPort": "80",
+						"ToPort": "80",
+						"CidrIp": {
+							"Ref": "RemoteAccessCIDRHttp"
+						}
+					},
+					{
+						"IpProtocol": "TCP",
+						"FromPort": "443",
+						"ToPort": "443",
+						"CidrIp": {
+							"Ref": "RemoteAccessCIDRHttps"
+						}
+					},
+					{
+						"IpProtocol": "TCP",
+						"FromPort": "0",
+						"ToPort": "65535",
+						"CidrIp": {
+							"Ref": "RemoteAccessCIDRVPC"
+						}
+					}
+				]
+			},
+			"Metadata": {
+				"AWS::CloudFormation::Designer": {
+					"id": "da265f0d-a092-44e2-90b6-1f56dde66354"
+				}
+			}
+		},
+		"OCCMInstance": {
+			"Type": "AWS::EC2::Instance",
+			"Properties": {
+				"DisableApiTermination": "FALSE",
+				"ImageId": {
+					"Fn::FindInMap": [
+						"RegionMap",
+						{
+							"Ref": "AWS::Region"
+						},
+						"AMI"
+					]
+				},
+				"NetworkInterfaces": [
+					{
+						"AssociatePublicIpAddress": {
+							"Ref": "AllocatePublicIP"
+						},
+						"DeleteOnTermination": "True",
+						"SubnetId": {
+							"Ref": "SubnetId"
+						},
+						"DeviceIndex": "0",
+						"GroupSet": [
+							{
+								"Fn::If": [
+									"GeneratedSG",
+									{
+										"Ref": "OCCMSecurityGroup"
+									},
+									{
+										"Ref": "CustomExternalSecurityGroup"
+									}
+								]
+							}
+						]
+					}
+				],
+				"InstanceType": {
+					"Fn::If": [
+						"NoDedicated",
+						"t3.xlarge",
+						"m5.2xlarge"
+					]
+				},
+				"IamInstanceProfile": {
+					"Ref": "OCCMInstanceProfile"
+				},
+				"KeyName": {
+					"Ref": "KeyPair"
+				},
+				"Monitoring": "false",
+				"Tags": [
+					{
+						"Key": "Name",
+						"Value": {
+							"Ref": "InstanceName"
+						}
+					},
+					{
+						"Key": "OCCMInstance",
+						"Value": {
+							"Ref": "InstanceName"
+						}
+					}
+				],
+				"UserData": {
+					"Ref": "ConnectorUserData"
+				},
+				"BlockDeviceMappings": [
+					{
+						"DeviceName": "/dev/sda1",
+						"Ebs": {
+							"VolumeSize": "100",
+							"DeleteOnTermination": "false",
+							"Encrypted": {
+								"Ref": "EncryptVolume"
+							},
+							"KmsKeyId": {
+								"Fn::If": [
+									"EncWithKey",
+									{
+										"Ref": "EncryptionKey"
+									},
+									{
+										"Ref": "AWS::NoValue"
+									}
+								]
+							}
+						}
+					}
+				]
+			},
+			"Metadata": {
+				"AWS::CloudFormation::Designer": {
+					"id": "7b0c8bc9-f15e-44af-9559-c5b3a13f58e3"
+				}
+			}
+		}
+	},
+	"Outputs": {
+		"InstanceId": {
+			"Value": {
+				"Ref": "OCCMInstance"
+			},
+			"Description": "Instance ID of the newly created instance"
+		},
+		"PrivateIP": {
+			"Value": {
+				"Fn::GetAtt": [
+					"OCCMInstance",
+					"PrivateIp"
+				]
+			},
+			"Description": "Private IP Address of Instance."
+		},
+		"PublicIP": {
+			"Value": {
+				"Fn::If": [
+					"NoPublicIP",
+					"",
+					{
+						"Fn::GetAtt": [
+							"OCCMInstance",
+							"PublicIp"
+						]
+					}
+				]
+			},
+			"Description": "Public IP Address of Instance."
+		}
+	},
+	"Metadata": {
+		"AWS::CloudFormation::Designer": {
+			"da265f0d-a092-44e2-90b6-1f56dde66354": {
+				"size": {
+					"width": 60,
+					"height": 60
+				},
+				"position": {
+					"x": 60,
+					"y": 90
+				},
+				"z": 1,
+				"embeds": []
+			},
+			"4ea8eae5-83f9-48dd-a647-682b18e68de8": {
+				"size": {
+					"width": 60,
+					"height": 60
+				},
+				"position": {
+					"x": 180,
+					"y": 90
+				},
+				"z": 1,
+				"embeds": []
+			},
+			"58d69253-03a4-43b6-952b-63debf2ebb50": {
+				"size": {
+					"width": 60,
+					"height": 60
+				},
+				"position": {
+					"x": 60,
+					"y": 210
+				},
+				"z": 1,
+				"embeds": []
+			},
+			"7b0c8bc9-f15e-44af-9559-c5b3a13f58e3": {
+				"size": {
+					"width": 60,
+					"height": 60
+				},
+				"position": {
+					"x": 180,
+					"y": 210
+				},
+				"z": 1,
+				"embeds": []
+			}
+		}
+	}
+}

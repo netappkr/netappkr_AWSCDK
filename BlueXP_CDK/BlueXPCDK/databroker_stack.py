@@ -15,7 +15,7 @@ class DatabrokerStack(NestedStack):
         keyPairname=Fn.import_value("keypairname")
         vpc_subnet=vpc.select_subnets(subnet_type=ec2.SubnetType.PUBLIC).subnet_ids[0]
         #BrokerEC2Role=Fn.import_value("DataBrokerRoleName")
-        template = cfn_inc.CfnInclude(self, "DataBroker", template_file="DataBroker.json",
+        template = cfn_inc.CfnInclude(self, "DataBroker", template_file="./Connector/DataBroker/DataBroker.json",
                                         parameters=dict(
                                             VpcId=vpcid,
                                             SubnetId=vpc_subnet,

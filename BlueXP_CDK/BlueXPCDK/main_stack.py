@@ -22,7 +22,7 @@ class mainStack(Stack):
         # Parameter
         prefix = CfnParameter(self, "prefix", type="String", default="netapp",
                               description="this parm use prefix or id in cfn. please input only english and all in lower case")
-        creator = CfnParameter(self, "creator", type="String", default="SeanP",
+        creator = CfnParameter(self, "creator", type="String", default="netapp",
                               description="please insert you are name initial")
         
         # stack
